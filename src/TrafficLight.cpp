@@ -1,6 +1,7 @@
 #include <iostream>
 #include <random>
-#include <async>
+#include <thread>
+#include <future>
 #include "TrafficLight.h"
 
 /* Implementation of class "MessageQueue" */
@@ -8,7 +9,7 @@ using namespace std::literals::chrono_literals;
 using Clock = std::chrono::high_resolution_clock;
 using TimePoint = std::chrono::high_resolution_clock::time_point;
 using Milliseconds = std::chrono::milliseconds;
-using std::chrono::high_resolution_clock;
+
 
 template <typename T>
 T MessageQueue<T>::receive()
@@ -41,14 +42,14 @@ void TrafficLight::waitForGreen()
     // Once it receives TrafficLightPhase::green, the method returns.
 }
 
-TrafficLightPhase TrafficLight::getCurrentPhase()
+TrafficLight::TrafficLightPhase TrafficLight::getCurrentPhase()
 {
     return _currentPhase;
 }
 
 void TrafficLight::simulate()
 {
-    threads.emplace_back(std::thead(&TrafficLight::cycleThroughPhases, this));
+    threads.emplace_back(std::thread(&TrafficLight::cycleThroughPhases, this));
 }
 
 // virtual function which is executed in a thread
@@ -75,10 +76,13 @@ void TrafficLight::cycleThroughPhases()
         if(currentCycleDuration >= targetCycleDuration)
         {
             _currentPhase = _currentPhase == red ? green : red;
-            auto msg = _currentPhase;
-            _condition = std::async(std::launch::async, &MessageQueue<TrafficLightPhase>::send, _lightPhases, std::move(msg));
 
-            _condition.wait();
+            auto msg = _currentPhase;
+
+            auto isSwitched = std::async(std::launch::async, &MessageQueue<TrafficLightPhase>::send, _lightPhases, std::move(msg));
+
+            isSwitched.wait();
+
             lastSwitch = Clock::now();
 
             // setting target duration for next cycle
