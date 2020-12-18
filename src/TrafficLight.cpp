@@ -1,9 +1,14 @@
 #include <iostream>
 #include <random>
+#include <async>
 #include "TrafficLight.h"
 
 /* Implementation of class "MessageQueue" */
-
+using namespace std::literals::chrono_literals;
+using Clock = std::chrono::high_resolution_clock;
+using TimePoint = std::chrono::high_resolution_clock::time_point;
+using Milliseconds = std::chrono::milliseconds;
+using std::chrono::high_resolution_clock;
 
 template <typename T>
 T MessageQueue<T>::receive()
@@ -43,15 +48,89 @@ TrafficLightPhase TrafficLight::getCurrentPhase()
 
 void TrafficLight::simulate()
 {
-    // FP.2b : Finally, the private method „cycleThroughPhases“ should be started in a thread when the public method „simulate“ is called. To do this, use the thread queue in the base class. 
+    threads.emplace_back(std::thead(&TrafficLight::cycleThroughPhases, this));
 }
 
 // virtual function which is executed in a thread
 void TrafficLight::cycleThroughPhases()
 {
+    // Generate random number between 4 and 6 seconds
+    std::random_device randomDevice;
+    std::mt19937 mersenneTwisterEngine(randomDevice());
+    std::uniform_int_distribution<> distribution(4000, 6000);
+    
+
+    // initialize time variables 
+    int targetCycleDuration{distribution(mersenneTwisterEngine)};
+    TimePoint lastSwitch{Clock::now()};
+
+    while(true)
+    {
+        std::this_thread::sleep_for(1ms);
+
+        TimePoint currentTime{Clock::now()};
+
+        auto currentCycleDuration{std::chrono::duration_cast<Milliseconds>( currentTime - lastSwitch ).count()};
+
+        if(currentCycleDuration >= targetCycleDuration)
+        {
+            _currentPhase = _currentPhase == red ? green : red;
+            auto msg = _currentPhase;
+            _condition = std::async(std::launch::async, &MessageQueue<TrafficLightPhase>::send, _lightPhases, std::move(msg));
+
+            _condition.wait();
+            lastSwitch = Clock::now();
+
+            // setting target duration for next cycle
+            targetCycleDuration = distribution(mersenneTwisterEngine);
+        }
+
+        
+
+        
+        
+        
+
+
+        
+    }
     // FP.2a : Implement the function with an infinite loop that measures the time between two loop cycles 
     // and toggles the current phase of the traffic light between red and green and sends an update method 
     // to the message queue using move semantics. The cycle duration should be a random value between 4 and 6 seconds. 
     // Also, the while-loop should use std::this_thread::sleep_for to wait 1ms between two cycles. 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
