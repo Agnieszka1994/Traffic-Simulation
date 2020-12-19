@@ -1,6 +1,6 @@
 # Traffic Simulation
 
-
+[![img](https://github.com/Agnieszka1994/Traffic-Simulation/blob/main/data/traffic_simulation.gif)](https://github.com/Agnieszka1994/Traffic-Simulation/blob/main/data/)
 
 
 This repo contains the final project of the Udacity concurrent programming course. 
